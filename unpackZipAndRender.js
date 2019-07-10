@@ -15,6 +15,7 @@ const outputPath = path.join(__dirname, 'target', 'processed')
 
 const isDirectory = (...pathParts) => fs.lstatAsync(path.join(...pathParts)).then(stats => stats.isDirectory())
 const flatten = x => [].concat(...x)
+const generateFile = (filename, filePreparor) => examples => examples.map(example => Promise.resolve(filePreparor(example)).then(contents => fs.writeFileAsync(path.join(outputPath, example.uniqueExampleRef, filename), contents)))
 
 const ensureUniqueName = (function () {
   const usedNames = []
@@ -74,7 +75,7 @@ fs.readdirAsync(componentPath)
   .tap(() => deleteFolderRecursive(outputPath))
   .tap(() => fs.mkdirAsync(outputPath))
   .tap(examples => examples.forEach(example => fs.mkdirAsync(path.join(outputPath, example.uniqueExampleRef))))
-  .tap(examples => examples.forEach(example => fs.writeFileAsync(path.join(outputPath, example.uniqueExampleRef, 'input.json'), JSON.stringify(example.data, null, 2))))
-  .tap(examples => examples.forEach(example => fs.writeFileAsync(path.join(outputPath, example.uniqueExampleRef, 'component.json'), JSON.stringify({name: example.componentName}, null, 2))))
-  .tap(examples => examples.forEach(example => fs.writeFileAsync(path.join(outputPath, example.uniqueExampleRef, 'output.html'), example.html)))
+  .tap(generateFile('output.html', example => example.html))
+  .tap(generateFile('input.json', example => JSON.stringify(example.data, null, 2)))
+  .tap(generateFile('component.json', example => JSON.stringify({name: example.componentName}, null, 2)))
   .then(() => console.log('done'))
