@@ -6,7 +6,10 @@ const fs = Promise.promisifyAll(require('fs'))
 const path = require('path')
 const YAML = require('yaml')
 
-const rootPath = process.argv[2] || '/Users/mcarey/projects/opensource/hmrc/x-frontend-snapshotter/target/govuk-frontend-2.13.0'
+const rootPath = process.argv[2]
+if (!rootPath) {
+  throw new Error('Root Path Required, you may find `./generateGovukTestFixtures.sh 2.13.0` a useful helper.')
+}
 const componentPath = path.join(rootPath, 'src', 'components')
 const outputPath = path.join(__dirname, 'target', 'processed')
 
