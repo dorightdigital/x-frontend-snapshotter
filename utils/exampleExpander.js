@@ -1,21 +1,24 @@
-const startTimer = (name) => {
-  const t = process.hrtime()
-  return {
-    stopAndLog: () => {
-      const diff = process.hrtime(t)
-      console.log('timer for [%s] took [%s] seconds', name, diff[0] * 1000000 + diff[1] / 1000)
-    }
+const uuid = require('uuid/v1')
+
+class Logger {
+  constructor(name) {
+    this.name = name
+    this.id = uuid()
+    this.t = process.hrtime()
+    console.log('timer [%s] started for [%s]', this.id, name)
+  }
+
+  stopAndLog() {
+    const diff = process.hrtime(this.t)
+    console.log('timer [%s] for [%s] took [%s] seconds [%sms]', this.id , this.name, diff[0], diff[1] / 1000000)
   }
 }
-
 
 const sortObjectKeys = obj => JSON.stringify(obj, Object.keys(obj).sort())
 
 const removeDuplicates = arr => {
-  const t = startTimer('removeDuplicates')
   const dedupe = arr.map(sortObjectKeys)
   const ans = [...new Set(dedupe)].map(JSON.parse)
-  t.stopAndLog()
   return ans
 }
 
@@ -29,12 +32,12 @@ const expandExamples = examples => {
   let expandedExamples = examples
   let previousLength = -1
   // decrease this in order to prevent stack overflow
-  let remainingRuns = 2
+  let remainingRuns = 3
 
   while(expandExamples.length !== previousLength && remainingRuns-- > 0) {
     console.log('remaining runs [%s], example length [%s]', remainingRuns, expandedExamples.length)
     previousLength = expandedExamples.length
-    const t = startTimer(`expand ${expandedExamples.length} items`)
+    const t = new Logger(`expand ${expandedExamples.length} items`)
     expandedExamples = expand(expandedExamples)
     t.stopAndLog()
   }

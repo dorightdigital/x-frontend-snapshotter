@@ -5,7 +5,7 @@ const nunjucks = require('nunjucks')
 const fs = Promise.promisifyAll(require('fs'))
 const path = require('path')
 const YAML = require('yaml')
-const expandExamples = require('./utils/exampleExpander').expandExamples
+const { expandExamples } = require('./utils/exampleExpander')
 
 const rootPath = process.argv[2]
 if (!rootPath) {
@@ -112,11 +112,15 @@ const gatherExamples = (componentName, parsedYaml) => parsedYaml.examples.map(ex
   component: componentName,
   uniqueExampleRef: ensureUniqueName(`${componentName}-${example.name}`.replace(/([\s]+)/g, '-')),
   data: example.data
-})).concat(expandExamples(getCombinationsFromParams(parsedYaml.params)).map(data => ({
-  component: componentName,
-  uniqueExampleRef: ensureUniqueName(`${componentName}-generated`),
-  data
-})))
+})).concat(expandExamples(getCombinationsFromParams(parsedYaml.params)).map(data => {
+  const uniqueExampleRef = ensureUniqueName(`${componentName}-generated`)
+  console.log('uniqueExampleRef', uniqueExampleRef)
+  return ({
+    component: componentName,
+    uniqueExampleRef,
+    data
+  })
+}))
 
 fs.readdirAsync(componentPath)
   .filter(fileOrDirName => isDirectory(componentPath, fileOrDirName))
