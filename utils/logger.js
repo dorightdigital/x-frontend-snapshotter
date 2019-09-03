@@ -10,7 +10,7 @@ class Logger {
 
   stopAndLog() {
     const diff = process.hrtime(this.t)
-    console.log('timer [%s] for [%s] took [%s] seconds [%sms]', this.id , this.name, diff[0], diff[1] / 1000000)
+    console.log('timer [%s] for [%s] took [%ss %sms]', this.id , this.name, diff[0], diff[1] / 1000000)
   }
 }
 
