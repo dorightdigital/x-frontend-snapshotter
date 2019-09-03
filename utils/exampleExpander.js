@@ -16,7 +16,7 @@ const expandExamples = examples => {
   let expandedExamples = examples
   let previousLength = -1
   // decrease this in order to prevent stack overflow
-  let remainingRuns = 1
+  let remainingRuns = 2
 
   while(expandExamples.length !== previousLength && remainingRuns-- > 0) {
     // console.log('remaining runs [%s], example length [%s]', remainingRuns, expandedExamples.length)

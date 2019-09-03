@@ -75,14 +75,15 @@ const ensureUniqueName = (function () {
 
 const getCombinationsFromParams = params => flatten(params.map(param => examplesByType[param.type].map(example => composeObj(param.name, example)).concat(composeObj(param.name, undefined))))
 
-var parsedYaml = JSON.parse(process.argv.pop());
-var componentName = process.argv.pop();
-
-parsedYaml.examples.map(example => ({
-  component: componentName,
-  uniqueExampleRef: ensureUniqueName(`${componentName}-${example.name}`.replace(/([\s]+)/g, '-')),
-  data: example.data
-})).concat(expandExamples(getCombinationsFromParams(parsedYaml.params)).map(data => {
-  const uniqueExampleRef = ensureUniqueName(`${componentName}-generated`)
-  console.log(JSON.stringify({component:componentName,uniqueExampleRef,data}))
-}))
+process.on('message', ({ componentName, yaml }) => {
+  const parsedYaml = JSON.parse(yaml)
+  const componentExamples = parsedYaml.examples.map(example => ({
+    component: componentName,
+    uniqueExampleRef: ensureUniqueName(`${componentName}-${example.name}`.replace(/([\s]+)/g, '-')),
+    data: example.data
+  })).concat(expandExamples(getCombinationsFromParams(parsedYaml.params)).map(data => {
+    const uniqueExampleRef = ensureUniqueName(`${componentName}-generated`)
+    return { component: componentName, uniqueExampleRef, data }
+  }))
+  process.send(componentExamples)
+});
