@@ -1,4 +1,4 @@
-#!/Users/mcarey/.nvm/versions/node/v12.4.0/bin/node
+#!/usr/bin/env node
 
 const Promise = require('bluebird')
 const nunjucks = require('nunjucks')
@@ -10,7 +10,14 @@ const rootPath = process.argv[2]
 if (!rootPath) {
   throw new Error('Root Path Required, you may find `./generateGovukTestFixtures.sh 2.13.0` a useful helper.')
 }
-const componentPath = path.join(rootPath, 'src', 'components')
+
+function getComponentPath() {
+  const oldPath = path.join(rootPath, 'src', 'components');
+  const newPath = path.join(rootPath, 'src', 'govuk', 'components');
+  return fs.existsSync(oldPath) ? oldPath : newPath
+}
+
+const componentPath = getComponentPath()
 const outputPath = path.join(__dirname, 'target', 'processed')
 
 const isDirectory = (...pathParts) => fs.lstatAsync(path.join(...pathParts)).then(stats => stats.isDirectory())
