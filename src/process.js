@@ -6,7 +6,10 @@ const fs = Promise.promisifyAll(require('fs'))
 const path = require('path')
 const YAML = require('yaml')
 
+const DEFAULT_YAML = 'examples:'
+
 const rootPath = process.argv[2]
+const org = ((parts) => parts[parts.length-3])(rootPath.split('/'))
 const componentPathOverride = process.argv[3]
 if (!rootPath) {
   throw new Error('Root Path Required, you may find `./generateTestFixtures.sh alphagov/govuk-frontend 2.13.0` a useful helper.')
@@ -65,27 +68,44 @@ const deleteFolderRecursive = function(path) {
   }
 };
 
+function getExamplesFromYamlString(yamlToParse) {
+  try {
+    return YAML.parse(yamlToParse).examples || [];
+  } catch (err) {
+    console.warn('Couldn\'t parse YAML for component')
+    console.warn(err)
+    return []
+  }
+}
+
+const renderNunjucksToHtml = nunjucksStr => {
+  try {
+    return nunjucks.renderString(nunjucksStr)
+  } catch (err) {
+    console.warn('failed to render nunjucks stiring:', JSON.stringify(nunjucksStr))
+    return 'FAILED TO RENDER'
+  }
+}
+
 fs.readdirAsync(componentPath)
   .filter(fileOrDirName => isDirectory(componentPath, fileOrDirName))
-  .tap(foo => console.log('!!!! 1', foo))
-  .map(componentName => fs.readFileAsync(path.join(componentPath, componentName, `${componentName}.yaml`))
-    .then(yamlToParse => YAML.parse(yamlToParse.toString()).examples.map(example => ({
+  .map(componentName => fs.readFileAsync(path.join(componentPath, componentName, `${componentName}.yaml`), 'utf8').catch(() => DEFAULT_YAML)
+    .then(yamlToParse => getExamplesFromYamlString(yamlToParse).map(example => ({
       component: componentName,
       exampleRef: example.name,
       uniqueExampleRef: ensureUniqueName(`${componentName}-${example.name}`.replace(/([\s]+)/g, '-')),
       data: example.data
     })))
   )
-  .tap(foo => console.log('!!!! 2', foo))
   .then(flatten)
   .map(example => ({ ...example,
-    componentName: ['govuk', example.component.split('-').map(section => section[0].toUpperCase() + section.substr(1)).join('')].join('')
+    componentName: [org, example.component.split('-').map(section => section[0].toUpperCase() + section.substr(1)).join('')].join('')
   }))
   .map(example => ({ ...example,
     nunjucks: `{% from '${example.component}/macro.njk' import ${example.componentName} %}{{${example.componentName}(${JSON.stringify(example.data, null, 2)})}}`
   }))
   .map(example => ({ ...example,
-    html: nunjucks.renderString(example.nunjucks)
+    html: renderNunjucksToHtml(example.nunjucks)
   }))
   .tap(() => deleteFolderRecursive(outputPath))
   .tap(() => fs.mkdirAsync(outputPath))
@@ -94,3 +114,4 @@ fs.readdirAsync(componentPath)
   .tap(generateFile('input.json', example => JSON.stringify(example.data, null, 2)))
   .tap(generateFile('component.json', example => JSON.stringify({name: example.componentName}, null, 2)))
   .then(() => console.log('done'))
+  .catch(err => {console.error(err); console.error(err.stack); process.exit(1)})
