@@ -75,7 +75,6 @@ function getExamplesFromYamlString(yamlToParse) {
     return YAML.safeLoad(yamlToParse, { json: true }).examples || [];
   } catch (err) {
     console.warn('Couldn\'t parse YAML for component')
-    console.warn(err)
     return []
   }
 }
@@ -85,7 +84,6 @@ const renderNunjucksToHtml = nunjucksStr => {
     return nunjucks.renderString(nunjucksStr)
   } catch (err) {
     console.warn('failed to render nunjucks string:', JSON.stringify(nunjucksStr))
-    console.warn(err)
     return 'FAILED TO RENDER'
   }
 }
@@ -106,7 +104,7 @@ fs.readdirAsync(componentPath)
   }))
   .reduce((result, example) => {
     const macroPath = `${example.component}/macro.njk`
-    if (fs.existsSync(path.join(componentPath, example.componentName, macroPath))) {
+    if (fs.existsSync(path.join(componentPath, macroPath))) {
       result.push({ ...example,
         nunjucks: `{% from '${macroPath}' import ${example.componentName} %}{{${example.componentName}(${JSON.stringify(example.data, null, 2)})}}`
       })
