@@ -4,7 +4,7 @@ const Promise = require('bluebird')
 const nunjucks = require('nunjucks')
 const fs = Promise.promisifyAll(require('fs'))
 const path = require('path')
-const YAML = require('yaml')
+const YAML = require('js-yaml')
 
 const DEFAULT_YAML = 'examples:'
 
@@ -72,7 +72,7 @@ const deleteFolderRecursive = function(path) {
 
 function getExamplesFromYamlString(yamlToParse) {
   try {
-    return YAML.parse(yamlToParse).examples || [];
+    return YAML.safeLoad(yamlToParse, { json: true }).examples || [];
   } catch (err) {
     console.warn('Couldn\'t parse YAML for component')
     console.warn(err)
@@ -85,6 +85,7 @@ const renderNunjucksToHtml = nunjucksStr => {
     return nunjucks.renderString(nunjucksStr)
   } catch (err) {
     console.warn('failed to render nunjucks string:', JSON.stringify(nunjucksStr))
+    console.warn(err)
     return 'FAILED TO RENDER'
   }
 }

@@ -11,9 +11,9 @@
   "dependencies": {
     "adm-zip": "^0.4.13",
     "bluebird": "^3.5.5",
+    "js-yaml": "^3.13.1",
     "nunjucks": "^3.2.0",
     "request": "^2.88.0",
-    "tar.gz": "^1.0.7",
-    "yaml": "^1.6.0"
+    "tar.gz": "^1.0.7"
   }
 }
