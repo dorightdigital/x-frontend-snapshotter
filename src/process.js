@@ -10,6 +10,8 @@ const DEFAULT_YAML = 'examples:'
 
 const rootPath = process.argv[2]
 const org = ((parts) => parts[parts.length-3])(rootPath.split('/'))
+const orgMap = { alphagov: 'govuk' }
+
 const componentPathOverride = process.argv[3]
 if (!rootPath) {
   throw new Error('Root Path Required, you may find `./generateTestFixtures.sh alphagov/govuk-frontend 2.13.0` a useful helper.')
@@ -82,7 +84,7 @@ const renderNunjucksToHtml = nunjucksStr => {
   try {
     return nunjucks.renderString(nunjucksStr)
   } catch (err) {
-    console.warn('failed to render nunjucks stiring:', JSON.stringify(nunjucksStr))
+    console.warn('failed to render nunjucks string:', JSON.stringify(nunjucksStr))
     return 'FAILED TO RENDER'
   }
 }
@@ -99,7 +101,7 @@ fs.readdirAsync(componentPath)
   )
   .then(flatten)
   .map(example => ({ ...example,
-    componentName: [org, example.component.split('-').map(section => section[0].toUpperCase() + section.substr(1)).join('')].join('')
+    componentName: [(orgMap[org] || org), example.component.split('-').map(section => section[0].toUpperCase() + section.substr(1)).join('')].join('')
   }))
   .map(example => ({ ...example,
     nunjucks: `{% from '${example.component}/macro.njk' import ${example.componentName} %}{{${example.componentName}(${JSON.stringify(example.data, null, 2)})}}`
