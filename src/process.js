@@ -104,9 +104,15 @@ fs.readdirAsync(componentPath)
   .map(example => ({ ...example,
     componentName: [(orgMap[org] || org), example.component.split('-').map(section => section[0].toUpperCase() + section.substr(1)).join('')].join('')
   }))
-  .map(example => ({ ...example,
-    nunjucks: `{% from '${example.component}/macro.njk' import ${example.componentName} %}{{${example.componentName}(${JSON.stringify(example.data, null, 2)})}}`
-  }))
+  .reduce((result, example) => {
+    const macroPath = `${example.component}/macro.njk`
+    if (fs.existsSync(path.join(componentPath, example.componentName, macroPath))) {
+      result.push({ ...example,
+        nunjucks: `{% from '${macroPath}' import ${example.componentName} %}{{${example.componentName}(${JSON.stringify(example.data, null, 2)})}}`
+      })
+    }
+    return result
+  }, [])
   .map(example => ({ ...example,
     html: renderNunjucksToHtml(example.nunjucks)
   }))
