@@ -1,10 +1,8 @@
-## X Frontend Snapshotter
-=======
+# X Frontend Snapshotter
 
 This is a tool to snapshot examples from govuk-frontend, and hopefully other departement frontends too.
 
-### Usageß
-----
+## Usage
 
 1. Clone the repo
 2. Make sure you're using a recent version of node (tested against `10.15.1`)
@@ -13,8 +11,7 @@ This is a tool to snapshot examples from govuk-frontend, and hopefully other dep
 
 The output will be save to the `target/processed` directory.
 
-### What's in the output?
-----
+## What's in the output?
 
 Each directory inside `target/processed` contains:
 
