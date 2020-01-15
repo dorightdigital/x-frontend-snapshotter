@@ -4,21 +4,32 @@ const Promise = require('bluebird')
 const nunjucks = require('nunjucks')
 const fs = Promise.promisifyAll(require('fs'))
 const path = require('path')
-const YAML = require('yaml')
+const YAML = require('js-yaml')
+
+const DEFAULT_YAML = 'examples:'
 
 const rootPath = process.argv[2]
+const org = ((parts) => parts[parts.length-3])(rootPath.split('/'))
+const orgMap = { alphagov: 'govuk' }
+
+const componentPathOverride = process.argv[3]
 if (!rootPath) {
-  throw new Error('Root Path Required, you may find `./generateGovukTestFixtures.sh 2.13.0` a useful helper.')
+  throw new Error('Root Path Required, you may find `./generateTestFixtures.sh alphagov/govuk-frontend 2.13.0` a useful helper.')
 }
 
 function getComponentPath() {
-  const oldPath = path.join(rootPath, 'src', 'components');
-  const newPath = path.join(rootPath, 'src', 'govuk', 'components');
-  return fs.existsSync(oldPath) ? oldPath : newPath
+  const paths = [
+    path.join(rootPath, 'src', 'components'),
+    path.join(rootPath, 'src', 'govuk', 'components'),
+    path.join(rootPath, 'src', 'hmrc', 'components')
+  ]
+  let componentPath
+  paths.forEach(path => componentPath = fs.existsSync(path) ? path : componentPath)
+  return componentPath || '/'
 }
 
-const componentPath = getComponentPath()
-const outputPath = path.join(__dirname, 'target', 'processed')
+const componentPath = componentPathOverride || getComponentPath()
+const outputPath = path.join(__dirname, '../', 'target', 'processed')
 
 const isDirectory = (...pathParts) => fs.lstatAsync(path.join(...pathParts)).then(stats => stats.isDirectory())
 const flatten = x => [].concat(...x)
@@ -59,10 +70,28 @@ const deleteFolderRecursive = function(path) {
   }
 };
 
+function getExamplesFromYamlString(yamlToParse) {
+  try {
+    return YAML.safeLoad(yamlToParse, { json: true }).examples || [];
+  } catch (err) {
+    console.warn('Couldn\'t parse YAML for component')
+    return []
+  }
+}
+
+const renderNunjucksToHtml = nunjucksStr => {
+  try {
+    return nunjucks.renderString(nunjucksStr)
+  } catch (err) {
+    console.warn('failed to render nunjucks string:', JSON.stringify(nunjucksStr))
+    return 'FAILED TO RENDER'
+  }
+}
+
 fs.readdirAsync(componentPath)
   .filter(fileOrDirName => isDirectory(componentPath, fileOrDirName))
-  .map(componentName => fs.readFileAsync(path.join(componentPath, componentName, `${componentName}.yaml`))
-    .then(yamlToParse => YAML.parse(yamlToParse.toString()).examples.map(example => ({
+  .map(componentName => fs.readFileAsync(path.join(componentPath, componentName, `${componentName}.yaml`), 'utf8').catch(() => DEFAULT_YAML)
+    .then(yamlToParse => getExamplesFromYamlString(yamlToParse).map(example => ({
       component: componentName,
       exampleRef: example.name,
       uniqueExampleRef: ensureUniqueName(`${componentName}-${example.name}`.replace(/([\s]+)/g, '-')),
@@ -71,13 +100,19 @@ fs.readdirAsync(componentPath)
   )
   .then(flatten)
   .map(example => ({ ...example,
-    componentName: ['govuk', example.component.split('-').map(section => section[0].toUpperCase() + section.substr(1)).join('')].join('')
+    componentName: [(orgMap[org] || org), example.component.split('-').map(section => section[0].toUpperCase() + section.substr(1)).join('')].join('')
   }))
+  .reduce((result, example) => {
+    const macroPath = `${example.component}/macro.njk`
+    if (fs.existsSync(path.join(componentPath, macroPath))) {
+      result.push({ ...example,
+        nunjucks: `{% from '${macroPath}' import ${example.componentName} %}{{${example.componentName}(${JSON.stringify(example.data, null, 2)})}}`
+      })
+    }
+    return result
+  }, [])
   .map(example => ({ ...example,
-    nunjucks: `{% from '${example.component}/macro.njk' import ${example.componentName} %}{{${example.componentName}(${JSON.stringify(example.data, null, 2)})}}`
-  }))
-  .map(example => ({ ...example,
-    html: nunjucks.renderString(example.nunjucks)
+    html: renderNunjucksToHtml(example.nunjucks)
   }))
   .tap(() => deleteFolderRecursive(outputPath))
   .tap(() => fs.mkdirAsync(outputPath))
@@ -86,3 +121,4 @@ fs.readdirAsync(componentPath)
   .tap(generateFile('input.json', example => JSON.stringify(example.data, null, 2)))
   .tap(generateFile('component.json', example => JSON.stringify({name: example.componentName}, null, 2)))
   .then(() => console.log('done'))
+  .catch(err => {console.error(err); console.error(err.stack); process.exit(1)})
