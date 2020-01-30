@@ -19,4 +19,4 @@ tar -xzpf v${VERSION}.tar.gz --strip-components 1
 ${BASE}/src/process.js $PWD $COMPONENTPATH
 cd ../../../processed
 echo $VERSION > VERSION.txt
-tar -czpf ../test-fixtures-${DEPENDENCY//\//-}-${VERSION}.tar.gz ./*
+tar -czpf ../test-fixtures-${DEPENDENCY/\//-}-${VERSION}.tar.gz *
